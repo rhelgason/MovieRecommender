@@ -13,7 +13,7 @@ As the creation of the similarity matrices is the most time-consuming part of th
 The data structures involved in this implementation are not too complicated. Upon initialization, the SimilarityMatrix class reads data from the provided datasets into pandas dataframes. The similarity matrices are both square dataframes that measure the cosine similarity between various users or movies. Calculating these matrices is an expensive process, but making predictions from them afterwards is very simple. The cosine similarity function operates as follows:
 
 <p align="center">
-  <img src="https://github.com/rhelgason/WebCrawler/blob/main/img/cosine_similarity_function.PNG" alt="cosine similarity function"/>
+  <img src="https://github.com/rhelgason/MovieRecommender/blob/main/img/cosine_similarity_function.PNG" alt="cosine similarity function"/>
 </p>
 
 In the (very common) scenario that two users have not rated any of the same movies or two movies have not veen rated by any of the same users, the similarity matrix is simply given the "N/A" value. This implies that the users or movies have no discernable relation and should not be considered in recommendations. A similar edge case that I have to handle was the situation in which users or movies overlapped on only one value. Although Euclidean distance can handle situations like this, cosine similarity does not deal as well because the angle between these two vectors will always be zero, no matter how different the rating was. To overcome this, I defined a simple function that inspected the single rating as a normalized Euclidean distance.
@@ -21,7 +21,7 @@ In the (very common) scenario that two users have not rated any of the same movi
 The similarity matrices do not scale well with either time or space complexity. Assuming that calculating the cosine similarity between two vectors is done in linear time, the time and space complexity are both O(m<sup>2</sup> + n<sup>2</sup>). It's likely that both of these can be reduced from the current implementation, but this has not been fully explored yet. The following is an example of a similarity matrix between 10 users:
 
 <p align="center">
-  <img src="https://github.com/rhelgason/WebCrawler/blob/main/img/user_similarity_matrix.PNG" alt="user similarity matrix"/>
+  <img src="https://github.com/rhelgason/MovieRecommender/blob/main/img/user_similarity_matrix.PNG" alt="user similarity matrix"/>
 </p>
 
 Values on this table range from 0 to 1, with higher values indicating more similarity. Obviously, the center diagonal of the dataframe is always 1.0 because users are identical to themselves. These matrices allow for simple predictions as explained ahead.
@@ -30,14 +30,14 @@ Values on this table range from 0 to 1, with higher values indicating more simil
 The simpler of the two prediction methods, this one utilizes the movie similarity matrix. Two movies are mathematically similar when users tend to give them similar ratings. This method takes a specific movie as input and suggests a few other movies that are likely to appeal in the same way. The similarity values for the input movie's column are sorted in descending order and the most similar movies are suggested. An example input and output is shown below:
 
 <p align="center">
-  <img src="https://github.com/rhelgason/WebCrawler/blob/main/img/prediction_by_movie.PNG" alt="prediction by movie"/>
+  <img src="https://github.com/rhelgason/MovieRecommender/blob/main/img/prediction_by_movie.PNG" alt="prediction by movie"/>
 </p>
 
 ### Prediction by User
 This prediction method is slightly more complicated and utilizes the user similarity matrix. Two users are mathematically similar when they tend to give movies similar ratings. This method takes a specific user as input and suggest a few other movies that the user is likely to also enjoy. The similarity values for the input user's column are sorted in descending order to find the subset of users most similar to them. The movie ratings of these similar indivduals are averaged and ranked again to produce a sorted list of the movies that the user is most likely to rate similarly. An example input and output is shown below:
 
 <p align="center">
-  <img src="https://github.com/rhelgason/WebCrawler/blob/main/img/prediction_by_user.PNG" alt="prediction by user"/>
+  <img src="https://github.com/rhelgason/MovieRecommender/blob/main/img/prediction_by_user.PNG" alt="prediction by user"/>
 </p>
 
 ## Runtime
