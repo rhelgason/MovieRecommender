@@ -17,6 +17,15 @@ class SimilarityMatrix:
     movieSimMatrix = None
 
     def __init__(self, fromScratch):
+        # dimensions
+        N = 100
+        M = 10
+
+        # read in movies metadata
+        print('Reading movie metadata...', flush=True)
+        df = pd.read_csv(self.MOVIES_PATH, usecols=['id', 'original_title'])
+        self.movieMatrix = df
+
         # load matrices from file path
         if (not fromScratch):
             print('Loading similarity matrices...', flush=True)
@@ -25,8 +34,6 @@ class SimilarityMatrix:
             return
         
         # read in ratings data
-        N = 10
-        M = -1
         print('Reading ratings data...', flush=True)
         df = pd.read_csv(self.RATINGS_PATH, usecols=['userId', 'movieId', 'rating'])
         if (N != -1):
@@ -34,13 +41,6 @@ class SimilarityMatrix:
         if (M != -1):
             df = df.loc[df['userId'] <= M]
         self.ratingMatrix = df
-
-        # read in movies metadata
-        print('Reading movie metadata...', flush=True)
-        df = pd.read_csv(self.MOVIES_PATH, usecols=['id', 'original_title'])
-        if (N != -1):
-            df = df.loc[df['id'] <= N]
-        self.movieMatrix = df
         
         # similarity matrices from sparse table
         df = self.ratingMatrix.pivot_table(index='userId', columns='movieId', values='rating')
@@ -88,5 +88,50 @@ class SimilarityMatrix:
             return secondStr
         return minuteStr + ' and ' + secondStr
 
-    def write(self, path):
+    def similarUser(self):
+        input1 = 'What is your user ID? '
+        id = input(input1)
+        while (not id.isnumeric() or int(id) < 1 or int(id) > self.userSimMatrix.shape[0]):
+            if (int(id) <= 0):
+                id = input('ID must be greater than or equal to 1. ' + input1)
+            elif (int(id) > self.userSimMatrix.shape[0]):
+                id = input('ID must be less than or equal to ' + str(self.userSimMatrix.shape[0]) + '. ' + input1)
+
         return
+    
+    def similarMovie(self):
+        input1 = 'What is the ID of the movie you would like similar recommendations for? '
+        id = input(input1)
+        while (not id.isnumeric() or int(id) < 1 or int(id) > self.movieSimMatrix.shape[0]):
+            if (not id.isnumeric()):
+                id = input(input1)
+            elif (int(id) <= 0):
+                id = input('ID must be greater than or equal to 1. ' + input1)
+            elif (int(id) > self.movieSimMatrix.shape[0]):
+                id = input('ID must be less than or equal to ' + str(self.movieSimMatrix.shape[0]) + '. ' + input1)
+        
+        # find movie title if exists
+        titleRow = self.movieMatrix.loc[self.movieMatrix['id'] == int(id)]
+        if (titleRow.empty):
+            print('Error. Movie ID not found in movie metadata file.')
+            return
+        title = titleRow.iloc[0]['original_title']
+            
+        # find most similar movies
+        N = 3
+        if (N >= self.movieSimMatrix.shape[0]):
+            N = self.movieSimMatrix.shape[0] - 1
+        # not sure why some aren't found, N increased for now
+        topMovies = self.movieSimMatrix.nlargest((N + 1) * 3, [id])
+
+        # print data
+        print('The top ' + str(N) + ' movie' + ('' if N == 1 else 's') + ' rated most similar to ' + title + ' are:')
+        i = 0
+        for movieId in topMovies.index:
+            if (movieId == int(id) or i >= N):
+                continue
+            row = self.movieMatrix.loc[self.movieMatrix['id'] == movieId]
+            if (row.empty):
+                continue
+            i += 1
+            print('\t' + str(i) + '. ' + row.iloc[0]['original_title'])
