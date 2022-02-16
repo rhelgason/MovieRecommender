@@ -17,10 +17,6 @@ class SimilarityMatrix:
     movieSimMatrix = None
 
     def __init__(self, fromScratch):
-        # dimensions
-        N = 100
-        M = 10
-
         # read in movies metadata
         print('Reading movie metadata...', flush=True)
         df = pd.read_csv(self.MOVIES_PATH, usecols=['id', 'original_title'])
@@ -40,6 +36,9 @@ class SimilarityMatrix:
             self.movieSimMatrix = pd.DataFrame(self.movieSimMatrix.to_numpy(), index=np.arange(1, self.movieSimMatrix.shape[0] + 1), columns=np.arange(1, self.movieSimMatrix.shape[0] + 1))
             return
 
+        # dimensions
+        N = 3000
+        M = 150
         if (N != -1):
             df = df.loc[df['movieId'] <= N]
         if (M != -1):
@@ -103,7 +102,7 @@ class SimilarityMatrix:
                 id = input('ID must be less than or equal to ' + str(self.userSimMatrix.shape[0]) + '. ' + input1)
             
         # find most similar users
-        M = 5
+        M = 30
         if (M >= self.userSimMatrix.shape[0]):
             M = self.userSimMatrix.shape[0] - 1
         topUsers = self.userSimMatrix.nlargest(M + 1, [int(id)])
@@ -116,7 +115,7 @@ class SimilarityMatrix:
         averageRatings = self.ratingMatrix.iloc[userIds].mean(axis=0)
 
         # find best rated movies
-        N = 3
+        N = 5
         if (N >= averageRatings.shape[0]):
             N = averageRatings.shape[0] - 1
         # not sure why some aren't found, N increased for now
@@ -153,7 +152,7 @@ class SimilarityMatrix:
         title = titleRow.iloc[0]['original_title']
             
         # find most similar movies
-        N = 3
+        N = 5
         if (N >= self.movieSimMatrix.shape[0]):
             N = self.movieSimMatrix.shape[0] - 1
         # not sure why some aren't found, N increased for now
