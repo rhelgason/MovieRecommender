@@ -1,5 +1,5 @@
 # Project related
-*.csv
+*_similarity_matrix.csv
 *.pdf
 
 # Byte-compiled / optimized / DLL files

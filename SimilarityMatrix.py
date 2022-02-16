@@ -37,8 +37,8 @@ class SimilarityMatrix:
             return
 
         # dimensions
-        N = 3000
-        M = 150
+        N = 9000
+        M = 900
         if (N != -1):
             df = df.loc[df['movieId'] <= N]
         if (M != -1):
