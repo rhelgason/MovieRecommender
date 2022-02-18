@@ -16,7 +16,7 @@ The data structures involved in this implementation are not too complicated. Upo
   <img src="https://github.com/rhelgason/MovieRecommender/blob/master/img/cosine_similarity_function.PNG" alt="cosine similarity function"/>
 </p>
 
-In the (very common) scenario that two users have not rated any of the same movies or two movies have not veen rated by any of the same users, the similarity matrix is simply given the "N/A" value. This implies that the users or movies have no discernable relation and should not be considered in recommendations. A similar edge case that I have to handle was the situation in which users or movies overlapped on only one value. Although Euclidean distance can handle situations like this, cosine similarity does not deal as well because the angle between these two vectors will always be zero, no matter how different the rating was. To overcome this, I defined a simple function that inspected the single rating as a normalized Euclidean distance.
+In the (very common) scenario that two users have not rated any of the same movies or two movies have not been rated by any of the same users, the similarity matrix is simply given the "N/A" value. This implies that the users or movies have no discernable relation and should not be considered in recommendations. A similar edge case that I had to handle was the situation in which users or movies overlapped on only one value. Although Euclidean distance can handle situations like this, cosine similarity does not deal as well because the angle between these two vectors will always be zero, no matter how different the rating was. To overcome this, I defined a simple function that inspected the single rating as a normalized Euclidean distance.
 
 The similarity matrices do not scale well with either time or space complexity. Assuming that calculating the cosine similarity between two vectors is done in linear time, the time and space complexity are both O(m<sup>2</sup> + n<sup>2</sup>). It's likely that both of these can be reduced from the current implementation, but this has not been fully explored yet. The following is an example of a similarity matrix between 10 users:
 
@@ -41,13 +41,26 @@ This prediction method is slightly more complicated and utilizes the user simila
 </p>
 
 ## Runtime
-As mentioned earlier, the time complexity of creating the similarity matrices O(m<sup>2</sup> + n<sup>2</sup>).
+As mentioned earlier, the time complexity of creating the similarity matrices O(m<sup>2</sup> + n<sup>2</sup>). I ran the datasets on various combinations of N and M to produce a data visualization of the runtime growth. The following is the time (in seconds) it took to produce the user similarity matrix for specific N and M values:
+
+### User Similarity Table
+<p align="center">
+  <img src="https://github.com/rhelgason/MovieRecommender/blob/master/img/user_table.PNG" alt="user table"/>
+</p>
+
+### Movie Similarity Table
+<p align="center">
+  <img src="https://github.com/rhelgason/MovieRecommender/blob/master/img/movie_table.PNG" alt="movie table"/>
+</p>
+
+N values grow along the X axis and M values grow along the Y axis. For both tables, the runtime clearly directly in correlation with the N and M values. However, the difference between the tables is stark. For the user table, runtimes increase much more directly as the M values grows, while the movie table runtimes increase with stronger correlation to the N values.
 
 After the similarity matrices have been created, the recommendation process is much simpler. Matrix access is done in linear time, but single columns of the matrix must be sorted to find the most similar values. This operation is done in O(mlog(m)) or O(nlog(n)) time, depending on whether predicting by user or by movie.
 
 ## Findings
+I have gained a lot from this project. Foremostly, I want to expand on the concept a little further to improve the data structures and algorithms included. I believe that the time and space complexities are not very impressive, and there must be ways to improve them. I input my own list of movie recommendations and learned that I should watch Interstellar. I'm not sure how I haven't seen that movie yet, but I expect that it will be something I enjoy.
 
-## Gained Knowledge and Predictions
+Lastly, I'm interested in also exploring k-means with movie recommendations. Although the data structures involved will be different, I think the concepts could be related easily. I don't think the work will be overly difficult.
 
 ## Dependencies
 The following Python libraries were used:
