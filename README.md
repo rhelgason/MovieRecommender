@@ -18,7 +18,7 @@ The data structures involved in this implementation are not too complicated. Upo
 
 In the (very common) scenario that two users have not rated any of the same movies or two movies have not been rated by any of the same users, the similarity matrix is simply given the "N/A" value. This implies that the users or movies have no discernable relation and should not be considered in recommendations. A similar edge case that I had to handle was the situation in which users or movies overlapped on only one value. Although Euclidean distance can handle situations like this, cosine similarity does not deal as well because the angle between these two vectors will always be zero, no matter how different the rating was. To overcome this, I defined a simple function that inspected the single rating as a normalized Euclidean distance.
 
-The similarity matrices do not scale well with either time or space complexity. Assuming that calculating the cosine similarity between two vectors is done in linear time, the time and space complexity are both O(m<sup>2</sup> + n<sup>2</sup>). It's likely that both of these can be reduced from the current implementation, but this has not been fully explored yet. The following is an example of a similarity matrix between 10 users:
+The similarity matrices do not scale well with either time or space complexity. Assuming that calculating the cosine similarity between two vectors is done in linear time, the time and space complexity are both O(n<sup>2</sup> + m<sup>2</sup>). It's likely that both of these can be reduced from the current implementation, but this has not been fully explored yet. The following is an example of a similarity matrix between 10 users:
 
 <p align="center">
   <img src="https://github.com/rhelgason/MovieRecommender/blob/master/img/user_similarity_matrix.PNG" alt="user similarity matrix"/>
@@ -41,7 +41,7 @@ This prediction method is slightly more complicated and utilizes the user simila
 </p>
 
 ## Runtime
-As mentioned earlier, the time complexity of creating the similarity matrices O(m<sup>2</sup> + n<sup>2</sup>). I ran the datasets on various combinations of N and M to produce a data visualization of the runtime growth. The following is the time (in seconds) it took to produce the user similarity matrix for specific N and M values:
+As mentioned earlier, the time complexity of creating the similarity matrices O(n<sup>2</sup> + m<sup>2</sup>). I ran the datasets on various combinations of N and M to produce a data visualization of the runtime growth. The following is the time (in seconds) it took to produce the similarity matrices for specific N and M values:
 
 ### User Similarity Table
 <p align="center">
@@ -55,7 +55,7 @@ As mentioned earlier, the time complexity of creating the similarity matrices O(
 
 N values grow along the X axis and M values grow along the Y axis. For both tables, the runtime clearly directly in correlation with the N and M values. However, the difference between the tables is stark. For the user table, runtimes increase much more directly as the M values grows, while the movie table runtimes increase with stronger correlation to the N values.
 
-After the similarity matrices have been created, the recommendation process is much simpler. Matrix access is done in linear time, but single columns of the matrix must be sorted to find the most similar values. This operation is done in O(mlog(m)) or O(nlog(n)) time, depending on whether predicting by user or by movie.
+After the similarity matrices have been created, the recommendation process is much simpler. Matrix access is done in linear time, but single columns of the matrix must be sorted to find the most similar values. This operation is done in O(nlog(n)) or O(mlog(m)) time, depending on whether predicting by movie or by user.
 
 ## Findings
 I have gained a lot from this project. Foremostly, I want to expand on the concept a little further to improve the data structures and algorithms included. I believe that the time and space complexities are not very impressive, and there must be ways to improve them. I input my own list of movie recommendations and learned that I should watch Interstellar. I'm not sure how I haven't seen that movie yet, but I expect that it will be something I enjoy.
