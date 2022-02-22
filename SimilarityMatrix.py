@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import time
 from scipy.spatial.distance import cosine
+import unicodedata
 
 class SimilarityMatrix:
     # constants
@@ -16,45 +17,60 @@ class SimilarityMatrix:
     userSimMatrix = None
     movieSimMatrix = None
 
-    def __init__(self, fromScratch):
+    def __init__(self, fromScratch, N=-1, M=-1):
         # read in movies metadata
         print('Reading movie metadata...', flush=True)
-        df = pd.read_csv(self.MOVIES_PATH, usecols=['id', 'original_title'])
-        self.movieMatrix = df
+        self.movieMatrix = pd.read_csv(self.MOVIES_PATH, usecols=['id', 'original_title'])
+        self.movieMatrix['id'] = self.movieMatrix[pd.to_numeric(self.movieMatrix['id'], errors='coerce', downcast='integer').notnull()]
+        self.movieMatrix['original_title'] = self.movieMatrix['original_title'].str.encode('ascii', 'replace').str.decode('ascii')
+        invalidMovies = self.movieMatrix[self.movieMatrix.isna().any(axis=1)].index.tolist()
+        self.movieMatrix = self.movieMatrix.dropna()
+        self.movieMatrix = self.movieMatrix.astype({'id': 'int', 'original_title': 'string'})
+        validMovies = list(map(int, self.movieMatrix['id'].tolist()))
 
         # read in ratings data
         print('Reading ratings data...', flush=True)
-        df = pd.read_csv(self.RATINGS_PATH, usecols=['userId', 'movieId', 'rating'])
+        self.ratingMatrix = pd.read_csv(self.RATINGS_PATH, usecols=['userId', 'movieId', 'rating'])
+        self.ratingMatrix = self.ratingMatrix.astype({'userId': 'int', 'movieId': 'int', 'rating': 'float'})
+        for movie in invalidMovies:
+            self.ratingMatrix = self.ratingMatrix.drop(self.ratingMatrix[self.ratingMatrix['movieId'] == movie].index)
 
         # load matrices from file path
         if (not fromScratch):
-            self.ratingMatrix = df.pivot_table(index='userId', columns='movieId', values='rating')
+            self.ratingMatrix = self.ratingMatrix.pivot_table(index='userId', columns='movieId', values='rating')
+            self.ratingMatrix = self.ratingMatrix[self.ratingMatrix.columns.intersection(validMovies)]
             print('Loading similarity matrices...', flush=True)
             self.userSimMatrix = pd.read_csv(self.USER_MATRIX_PATH, index_col=0)
-            self.userSimMatrix = pd.DataFrame(self.userSimMatrix.to_numpy(), index=np.arange(1, self.userSimMatrix.shape[0] + 1), columns=np.arange(1, self.userSimMatrix.shape[0] + 1))
+            self.userSimMatrix.index = self.userSimMatrix.index.map(int)
+            self.userSimMatrix.columns = self.userSimMatrix.columns.map(int)
             self.movieSimMatrix = pd.read_csv(self.MOVIE_MATRIX_PATH, index_col=0)
-            self.movieSimMatrix = pd.DataFrame(self.movieSimMatrix.to_numpy(), index=np.arange(1, self.movieSimMatrix.shape[0] + 1), columns=np.arange(1, self.movieSimMatrix.shape[0] + 1))
+            self.movieSimMatrix.index = self.movieSimMatrix.index.map(int)
+            self.movieSimMatrix.columns = self.movieSimMatrix.columns.map(int)
             return
 
         # dimensions
-        N = -1
-        M = -1
         if (N != -1):
-            df = df.loc[df['movieId'] <= N]
+            self.ratingMatrix = self.ratingMatrix.loc[self.ratingMatrix['movieId'] <= N]
+            self.movieMatrix = self.movieMatrix.loc[self.movieMatrix['id'] <= N]
         if (M != -1):
-            df = df.loc[df['userId'] <= M]
-        self.ratingMatrix = df.pivot_table(index='userId', columns='movieId', values='rating')
+            self.ratingMatrix = self.ratingMatrix.loc[self.ratingMatrix['userId'] <= M]
+        self.ratingMatrix = self.ratingMatrix.pivot_table(index='userId', columns='movieId', values='rating')
+        self.ratingMatrix = self.ratingMatrix[self.ratingMatrix.columns.intersection(validMovies)]
         
         # similarity matrices from sparse table
-        print('\nCreating user similarity matrix...', flush=True)
+        print('Creating user similarity matrix...', flush=True)
         start = time.time()
         self.userSimMatrix = self.makeSimMatrix(self.ratingMatrix)
+        self.userSimMatrix.index = self.userSimMatrix.index.map(int)
+        self.userSimMatrix.columns = self.userSimMatrix.columns.map(int)
         elapsed = time.time() - start
         print('User similarity matrix created in ' + self.makeTimeString(elapsed))
 
-        print('\nCreating movie similarity matrix...', flush=True)
+        print('Creating movie similarity matrix...', flush=True)
         start = time.time()
         self.movieSimMatrix = self.makeSimMatrix(self.ratingMatrix.T)
+        self.movieSimMatrix.index = self.movieSimMatrix.index.map(int)
+        self.movieSimMatrix.columns = self.movieSimMatrix.columns.map(int)
         elapsed = time.time() - start
         print('Movie similarity matrix created in ' + self.makeTimeString(elapsed))
 
@@ -79,7 +95,7 @@ class SimilarityMatrix:
                     val = 1 - (abs(rows.iat[0,0] - rows.iat[1,0]) / 5.0)
                 matrix[i, j] = val
                 matrix[j, i] = val
-        return pd.DataFrame(matrix, index=np.arange(1, N + 1), columns=np.arange(1, N + 1))
+        return pd.DataFrame(matrix, index=df.index, columns=df.index)
 
     def makeTimeString(self, elapsed):
         minutes = int(elapsed // 60)
@@ -93,20 +109,21 @@ class SimilarityMatrix:
     def similarUser(self):
         input1 = 'What is your user ID? '
         id = input(input1)
-        while (not id.isnumeric() or int(id) < 1 or int(id) > self.userSimMatrix.shape[0]):
+        while (not id.isnumeric() or int(id) < 1 or not int(id) in self.userSimMatrix.index):
             if (not id.isnumeric()):
                 id = input(input1)
             if (int(id) <= 0):
                 id = input('ID must be greater than or equal to 1. ' + input1)
-            elif (int(id) > self.userSimMatrix.shape[0]):
-                id = input('ID must be less than or equal to ' + str(self.userSimMatrix.shape[0]) + '. ' + input1)
+            else:
+                id = input('Sorry, that ID is not in the similarity matrix. ' + input1)
+        id = int(id)
             
         # find most similar users
         M = 30
         if (M >= self.userSimMatrix.shape[0]):
             M = self.userSimMatrix.shape[0] - 1
-        topUsers = self.userSimMatrix.nlargest(M + 1, [int(id)])
-        topUsers = topUsers.drop([int(id)])
+        topUsers = self.userSimMatrix.nlargest(M + 1, [id])
+        topUsers = topUsers.drop([id])
 
         # average their movie ratings
         userIds = []
@@ -118,34 +135,31 @@ class SimilarityMatrix:
         N = 5
         if (N >= averageRatings.shape[0]):
             N = averageRatings.shape[0] - 1
-        # not sure why some aren't found, N increased for now
-        topMovies = averageRatings.nlargest(averageRatings.shape[0])
+        topMovies = averageRatings.nlargest(N)
 
         # print data
+        N = topMovies.shape[0]
         print('The top ' + str(N) + ' movie' + ('' if N == 1 else 's') + ' suggested for you are:')
         i = 0
         for movieId in topMovies.index:
-            if (i >= N):
-                continue
             row = self.movieMatrix.loc[self.movieMatrix['id'] == movieId]
-            if (row.empty):
-                continue
             i += 1
             print('\t' + str(i) + '. ' + row.iloc[0]['original_title'])
     
     def similarMovie(self):
         input1 = 'What is the ID of the movie you would like similar recommendations for? '
         id = input(input1)
-        while (not id.isnumeric() or int(id) < 1 or int(id) > self.movieSimMatrix.shape[0]):
+        while (not id.isnumeric() or int(id) < 1 or not int(id) in self.movieSimMatrix.index):
             if (not id.isnumeric()):
                 id = input(input1)
             elif (int(id) <= 0):
                 id = input('ID must be greater than or equal to 1. ' + input1)
-            elif (int(id) > self.movieSimMatrix.shape[0]):
-                id = input('ID must be less than or equal to ' + str(self.movieSimMatrix.shape[0]) + '. ' + input1)
+            else:
+                id = input('Sorry, that ID is not in the similarity matrix. ' + input1)
+        id = int(id)
         
         # find movie title if exists
-        titleRow = self.movieMatrix.loc[self.movieMatrix['id'] == int(id)]
+        titleRow = self.movieMatrix.loc[self.movieMatrix['id'] == id]
         if (titleRow.empty):
             print('Error. Movie ID not found in movie metadata file.')
             return
@@ -155,18 +169,14 @@ class SimilarityMatrix:
         N = 5
         if (N >= self.movieSimMatrix.shape[0]):
             N = self.movieSimMatrix.shape[0] - 1
-        # not sure why some aren't found, N increased for now
-        topMovies = self.movieSimMatrix.nlargest(self.movieSimMatrix.shape[0], [int(id)])
-        topMovies = topMovies.drop([int(id)])
+        topMovies = self.movieSimMatrix.nlargest(N + 1, [id])
+        topMovies = topMovies.drop([id])
 
         # print data
+        N = topMovies.shape[0]
         print('The top ' + str(N) + ' movie' + ('' if N == 1 else 's') + ' rated most similar to ' + title + ' are:')
         i = 0
         for movieId in topMovies.index:
-            if (i >= N):
-                continue
-            row = self.movieMatrix.loc[self.movieMatrix['id'] == movieId]
-            if (row.empty):
-                continue
+            row = self.movieMatrix.loc[self.movieMatrix['id'] == int(movieId)]
             i += 1
             print('\t' + str(i) + '. ' + row.iloc[0]['original_title'])

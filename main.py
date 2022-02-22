@@ -1,4 +1,3 @@
-from asyncio.windows_events import NULL
 from SimilarityMatrix import SimilarityMatrix
 
 def main():
@@ -7,15 +6,29 @@ def main():
     val = input(input1).lower()
     while (val != 'n' and val != 'y'):
         val = input(input1).lower()
-    mat = SimilarityMatrix(True if val == 'y' else False)
+    mat = None
+    if (val == 'n'):
+        mat = SimilarityMatrix(False)
+    else:
+        input2 = 'Enter dimension for N (0 for all movies): '
+        n = input(input2)
+        while (not n.isnumeric()):
+            n = input(input2)
+        n = int(n)
+        input3 = 'Enter dimension for M (0 for all users): '
+        m = input(input3)
+        while (not m.isnumeric()):
+            m = input(input3)
+        m = int(m)
+        mat = SimilarityMatrix(True, -1 if n == 0 else n, -1 if m == 0 else m)
 
     # create recommendations
     print()
-    input2 = 'Would you like to find movies you may like [1], movies similar to another [2], or quit [q]? '
+    input4 = 'Would you like to find movies you may like [1], movies similar to another [2], or quit [q]? '
     while (val != 'q'):
-        val = input(input2).lower()
+        val = input(input4).lower()
         while (val != '1' and val != '2' and val != 'q'):
-            val = input(input2).lower()
+            val = input(input4).lower()
         if (val == 'q'):
             break
 
