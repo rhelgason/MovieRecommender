@@ -147,15 +147,21 @@ class SimilarityMatrix:
             print('\t' + str(i) + '. ' + row.iloc[0]['original_title'])
     
     def similarMovie(self):
-        input1 = 'What is the ID of the movie you would like similar recommendations for? '
+        input1 = 'What is the name or ID of the movie you would like similar recommendations for? '
         id = input(input1)
+        if (not id.isnumeric() and id in self.movieMatrix['original_title'].values):
+            row = self.movieMatrix.loc[self.movieMatrix['original_title'] == id]
+            id = str(row.iloc[0]['id'])
         while (not id.isnumeric() or int(id) < 1 or not int(id) in self.movieSimMatrix.index):
             if (not id.isnumeric()):
                 id = input(input1)
             elif (int(id) <= 0):
                 id = input('ID must be greater than or equal to 1. ' + input1)
             else:
-                id = input('Sorry, that ID is not in the similarity matrix. ' + input1)
+                id = input('Sorry, that movie or ID is not in the similarity matrix. ' + input1)
+            if (id in self.movieMatrix['original_title'].values):
+                row = self.movieMatrix.loc[self.movieMatrix['original_title'] == id]
+                id = row.iloc[0]['id']
         id = int(id)
         
         # find movie title if exists
