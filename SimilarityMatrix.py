@@ -159,9 +159,9 @@ class SimilarityMatrix:
                 id = input('ID must be greater than or equal to 1. ' + input1)
             else:
                 id = input('Sorry, that movie or ID is not in the similarity matrix. ' + input1)
-            if (id in self.movieMatrix['original_title'].values):
+            if (not id.isnumeric() and id in self.movieMatrix['original_title'].values):
                 row = self.movieMatrix.loc[self.movieMatrix['original_title'] == id]
-                id = row.iloc[0]['id']
+                id = str(row.iloc[0]['id'])
         id = int(id)
         
         # find movie title if exists
@@ -176,7 +176,10 @@ class SimilarityMatrix:
         if (N >= self.movieSimMatrix.shape[0]):
             N = self.movieSimMatrix.shape[0] - 1
         topMovies = self.movieSimMatrix.nlargest(N + 1, [id])
-        topMovies = topMovies.drop([id])
+        if (id in topMovies.index.values):
+            topMovies = topMovies.drop([id])
+        else:
+            topMovies = topMovies.drop(topMovies.tail(1).index)
 
         # print data
         N = topMovies.shape[0]
