@@ -1,4 +1,4 @@
-# MovieRecommender
+# movie-recommender
 A movie recommender from scratch using csv files containing user reviews of movies. After creating cosine similarity matrices between users and movies, the program can suggest new movie based on user reviews. This is done either by finding users with similar reviews or similarly rated movies.
 
 ## Dataset
